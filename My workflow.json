@@ -1,0 +1,323 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        -96
+      ],
+      "id": "f92a7b79-325b-4365-9fa3-ac6e30a3add6",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "qwen3:4b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        608,
+        48
+      ],
+      "id": "fc9f3fb1-6b59-43ef-83f1-947f0b614370",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "lAcoJncUA0it7cbq",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "231e3948-2695-4f37-ab30-0fbd5b75535d",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "binaryPropertyName": "audio_file"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -288,
+        0
+      ],
+      "id": "f3ee2167-3161-44f7-b596-66f8e4293b12",
+      "name": "Webhook",
+      "webhookId": "231e3948-2695-4f37-ab30-0fbd5b75535d"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(i => {\n  const k = Object.keys(i.binary || {})[0];\n  if (k && k !== 'file') { i.binary.file = i.binary[k]; delete i.binary[k]; }\n  return i;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        0
+      ],
+      "id": "bf3d20f8-27b1-45aa-a6b5-fe3341d2d7b3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whisper-asr:9000/detect-language",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "encode",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "audio_file",
+              "inputDataFieldName": "=file"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        256,
+        160
+      ],
+      "id": "3ad54bba-6b1b-454b-b063-9cc953c4f7d5",
+      "name": "Language Detector"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "130a580b-b96a-4a0c-b330-ba6733071958",
+              "leftValue": "={{ $json.body.translate }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        64,
+        0
+      ],
+      "id": "07b9740d-f7cc-41b0-901e-e3f0d590a507",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whisper-asr:9000/asr",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "encode",
+              "value": "true"
+            },
+            {
+              "name": "task",
+              "value": "translate"
+            },
+            {
+              "name": "language",
+              "value": "bn"
+            },
+            {
+              "name": "initial_prompt"
+            },
+            {
+              "name": "vad_filter",
+              "value": "false"
+            },
+            {
+              "name": "word_timestamps",
+              "value": "false"
+            },
+            {
+              "name": "output",
+              "value": "txt"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "audio_file",
+              "inputDataFieldName": "=file"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        -144
+      ],
+      "id": "e1817b45-4002-458c-85f1-4ea34a432152",
+      "name": "Translator"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        160
+      ],
+      "id": "115bef85-654d-4b3c-a9dd-e590a3c1a02c",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Translator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Language Detector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translator": {
+      "main": [
+        []
+      ]
+    },
+    "Language Detector": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4e9850ba-c810-45a8-a830-5ce9845045e1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3487b3050e1387caa0803d167a8758ab27e42eb6db42aeaf3cad35abd59758bb"
+  },
+  "id": "zFK0NrtVFzyI38mM",
+  "tags": []
+}
